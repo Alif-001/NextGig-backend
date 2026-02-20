@@ -17,7 +17,6 @@ app.use(express.json());
 const db_username = process.env.DB_USER;
 const db_password = process.env.DB_PASSWORD;
 
-console.log(db_username, db_password);
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri = `mongodb+srv://${db_username}:${db_password}@cluster0.tab6apc.mongodb.net/?appName=Cluster0`;
@@ -44,30 +43,42 @@ async function run() {
     // Get the database and collection on which to run the operation
     const jobsCollection = client.db("NextGig").collection("jobs");
 
-    
+    // jobs api
+    app.get("/jobs", async (_req, res, next) => {
+      try {
+        const cursor = jobsCollection.find({});
+
+        const result = await cursor.toArray();
+
+        res.send(result);
+      } catch (err) {
+        next(err);
+      }
+    });
+
+    // Routes
+    app.get("/", (req, res) => {
+      res.json({ status: "ok", message: "NextGig-Backend running" });
+    });
+
+    // 404 handler
+    app.use((req, res) => {
+      res.status(404).json({ error: "Not Found" });
+    });
+
+    // Error handler
+    app.use((err, req, res, next) => {
+      console.error(err);
+      res.status(500).json({ error: "Internal Server Error" });
+    });
+
+    app.listen(PORT, () => {
+      console.log(`Server listening on http://localhost:${PORT}`);
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
   }
 }
+
 run().catch(console.dir);
-
-// Routes
-app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "NextGig-Backend running" });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: "Not Found" });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: "Internal Server Error" });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
-});
