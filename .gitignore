@@ -1,0 +1,115 @@
+# Node / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Logs
+logs/
+*.log
+.log
+debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Build output
+dist/
+build/
+out/
+tmp/
+.tmp/
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional npm cache
+.npm/
+.cache/
+
+# Environment variables
+.env
+.env.*.local
+.env.local
+.env.test
+.env.production
+
+# PM2
+.pm2/
+
+# Docker (ignore override files and local envs)
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# Mongo / DB
+# (Ignore common DB dumps and local DB folders if created inside project)
+dump/
+mongo-data/
+mongodb-data/
+mongod.lock
+
+# Database files
+*.sqlite
+*.db
+*.mdb
+*.lock
+
+# Certificates / keys
+*.pem
+*.key
+*.crt
+certs/
+secrets/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Vim swap
+*~
+*.swp
+*.swo
+
+# Misc
+.eslintcache
+.next
+.parcel-cache
+/.pnp
+/.pnp.js
+
+# JetBrains
+/.idea
+
+# Optional: ignore uploaded user files / temp
+uploads/
+tmp/
+
+# Ignore local test results and tooling
+.eslintcache
+.mocha_cache
+
+# Lockfiles: usually you commit lockfiles; uncomment to ignore if desired
+# package-lock.json
+# yarn.lock
+
