@@ -17,8 +17,8 @@ app.use(express.json());
 const db_username = process.env.DB_USER;
 const db_password = process.env.DB_PASSWORD;
 
-
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const { ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${db_username}:${db_password}@cluster0.tab6apc.mongodb.net/?appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -42,6 +42,7 @@ async function run() {
 
     // Get the database and collection on which to run the operation
     const jobsCollection = client.db("NextGig").collection("jobs");
+    const jobsApplications = client.db("NextGig").collection("applications");
 
     // jobs api
     app.get("/jobs", async (_req, res, next) => {
@@ -54,6 +55,51 @@ async function run() {
       } catch (err) {
         next(err);
       }
+    });
+
+    app.get("/jobs/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await jobsCollection.findOne(query);
+      res.send(result);
+    });
+
+    // jobs applications related api
+
+    app.get("/applications", async (req, res) => {
+      const email = req.query.email;
+
+      const query = {
+        applicant: email,
+      };
+
+      const result = await jobsApplications.find(query).toArray();
+
+      // bad way to aggregate data
+      for(application of result) {
+
+
+
+        const jobId = application.jobId
+        const jobQuery = {_id: new ObjectId(jobId)}
+
+        const job = await jobsCollection.findOne(jobQuery)
+
+        application.company = job.company
+        application.title = job.title
+        application.company_logo = job.company_logo
+
+      }
+
+      res.send(result);
+    });
+
+    app.post("/applications", async (req, res) => {
+      const  application  = req.body;
+
+      const result = await jobsApplications.insertOne(application);
+
+      res.send(result);
     });
 
     // Routes
