@@ -28,6 +28,8 @@ const client = new MongoClient(uri, {
     strict: true,
     deprecationErrors: true,
   },
+  serverSelectionTimeoutMS: 60000, // tries 60s before failing
+  connectTimeoutMS: 60000,
 });
 
 async function run() {
@@ -45,9 +47,17 @@ async function run() {
     const jobsApplications = client.db("NextGig").collection("applications");
 
     // jobs api
-    app.get("/jobs", async (_req, res, next) => {
+    app.get("/jobs", async (req, res, next) => {
       try {
-        const cursor = jobsCollection.find({});
+        const email = req.query.email;
+
+        const query = {}
+
+        if(email){
+          query.hr_email = email
+        }
+
+        const cursor = jobsCollection.find( query );
 
         const result = await cursor.toArray();
 
@@ -57,10 +67,26 @@ async function run() {
       }
     });
 
+    // could be done but should not be done.
+    // app.get('/jobsByEmailAddress', async (req, res) => {
+    //   const email = req.query.email;
+    //   const query = { hr_email: email }
+    //   const result = await jobsCollection.find(query).toArray();
+    //   res.send(result);
+    // })
+
     app.get("/jobs/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await jobsCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/jobs", async (req, res) => {
+      const job = req.body;
+
+      const result = await jobsCollection.insertOne(job);
+
       res.send(result);
     });
 
@@ -76,26 +102,22 @@ async function run() {
       const result = await jobsApplications.find(query).toArray();
 
       // bad way to aggregate data
-      for(application of result) {
+      for (application of result) {
+        const jobId = application.jobId;
+        const jobQuery = { _id: new ObjectId(jobId) };
 
+        const job = await jobsCollection.findOne(jobQuery);
 
-
-        const jobId = application.jobId
-        const jobQuery = {_id: new ObjectId(jobId)}
-
-        const job = await jobsCollection.findOne(jobQuery)
-
-        application.company = job.company
-        application.title = job.title
-        application.company_logo = job.company_logo
-
+        application.company = job.company;
+        application.title = job.title;
+        application.company_logo = job.company_logo;
       }
 
       res.send(result);
     });
 
     app.post("/applications", async (req, res) => {
-      const  application  = req.body;
+      const application = req.body;
 
       const result = await jobsApplications.insertOne(application);
 
