@@ -51,13 +51,13 @@ async function run() {
       try {
         const email = req.query.email;
 
-        const query = {}
+        const query = {};
 
-        if(email){
-          query.hr_email = email
+        if (email) {
+          query.hr_email = email;
         }
 
-        const cursor = jobsCollection.find( query );
+        const cursor = jobsCollection.find(query);
 
         const result = await cursor.toArray();
 
@@ -113,6 +113,32 @@ async function run() {
         application.company_logo = job.company_logo;
       }
 
+      res.send(result);
+    });
+
+    app.get("/applications/job/:job_id", async (req, res) => {
+      const job_id = req.params.job_id;
+
+      const query = { jobId: job_id };
+      const result = await jobsApplications.find(query).toArray();
+
+      res.send(result);
+    });
+
+    app.patch("/applications/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const status = req.body.status;
+
+      const filter = { _id: new ObjectId(id) };
+
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
+
+      const result = await jobsApplications.updateOne(filter, updateDoc);
       res.send(result);
     });
 
