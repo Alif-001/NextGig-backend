@@ -1,16 +1,61 @@
 const express = require("express");
-
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const app = express();
 const cors = require("cors");
 const PORT = process.env.PORT || 3000;
+
+const admin = require("firebase-admin");
+
+const serviceAccount = require("./firebase-private-key.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 // use CommonJS require instead of ESM import and use the dns module's setServers
 const { setServers } = require("dns");
 setServers(["1.1.1.1", "8.8.8.8"]);
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
+app.use(cookieParser());
 app.use(express.json());
+
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+
+  if (!token) {
+    return res.status(401).send({ massage: "unauthorized access token." });
+  }
+
+  jwt.verify(token, process.env.JWT_ACCESS_SECRET, function (err, decoded) {
+    if (err) {
+      return res.status(401).send({ massage: "unauthorized access token." });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
+
+const verifyFirebaseToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).send({ massage: "unauthorized access token." });
+  }
+
+  const userInfo = await admin.auth().verifyIdToken(token);
+
+  req.tokenEmail = userInfo.email;
+  next();
+};
 
 // Mongodb
 
@@ -19,6 +64,7 @@ const db_password = process.env.DB_PASSWORD;
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const { ObjectId } = require("mongodb");
+const { nextTick } = require("process");
 const uri = `mongodb+srv://${db_username}:${db_password}@cluster0.tab6apc.mongodb.net/?appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -45,6 +91,26 @@ async function run() {
     // Get the database and collection on which to run the operation
     const jobsCollection = client.db("NextGig").collection("jobs");
     const jobsApplications = client.db("NextGig").collection("applications");
+
+    // jwt token api
+    app.post("/jwt", async (req, res) => {
+      const { email } = req.body;
+      const user = { email };
+      const token = jwt.sign(user, process.env.JWT_ACCESS_SECRET, {
+        expiresIn: "1h",
+      });
+
+      // set token in the cookie
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: false, // true in production (HTTPS)
+        sameSite: "strict",
+        maxAge: 60 * 60 * 1000,
+      });
+
+      res.send({ token });
+    });
 
     // jobs api
     app.get("/jobs", async (req, res, next) => {
@@ -108,29 +174,41 @@ async function run() {
 
     // jobs applications related api
 
-    app.get("/applications", async (req, res) => {
-      const email = req.query.email;
+    app.get(
+      "/applications",
+      verifyFirebaseToken,
+      verifyToken,
+      async (req, res) => {
+        const email = req.query.email;
 
-      const query = {
-        applicant: email,
-      };
+        if (email !== req.decoded.email) {
+          return res.status(403).send({ message: "forbidden access." });
+        }
+        if (email !== req.tokenEmail) {
+          return res.status(403).send({ message: "forbidden access." });
+        }
 
-      const result = await jobsApplications.find(query).toArray();
+        const query = {
+          applicant: email,
+        };
 
-      // bad way to aggregate data
-      for (application of result) {
-        const jobId = application.jobId;
-        const jobQuery = { _id: new ObjectId(jobId) };
+        const result = await jobsApplications.find(query).toArray();
 
-        const job = await jobsCollection.findOne(jobQuery);
+        // bad way to aggregate data
+        for (application of result) {
+          const jobId = application.jobId;
+          const jobQuery = { _id: new ObjectId(jobId) };
 
-        application.company = job.company;
-        application.title = job.title;
-        application.company_logo = job.company_logo;
-      }
+          const job = await jobsCollection.findOne(jobQuery);
 
-      res.send(result);
-    });
+          application.company = job.company;
+          application.title = job.title;
+          application.company_logo = job.company_logo;
+        }
+
+        res.send(result);
+      },
+    );
 
     app.get("/applications/job/:job_id", async (req, res) => {
       const job_id = req.params.job_id;

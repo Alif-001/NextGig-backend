@@ -13,8 +13,11 @@
   "license": "ISC",
   "packageManager": "pnpm@10.30.0",
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "firebase-admin": "^13.7.0",
+    "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.1.0"
   }
 }
