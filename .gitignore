@@ -116,3 +116,5 @@ tmp/
 
 firebase-private-key.json
 
+.vercel
+.env*.local

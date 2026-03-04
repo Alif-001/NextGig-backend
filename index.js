@@ -20,7 +20,7 @@ setServers(["1.1.1.1", "8.8.8.8"]);
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://nextgig-e84eb.web.app",
     credentials: true,
   }),
 );
@@ -43,17 +43,25 @@ const verifyToken = (req, res, next) => {
 };
 
 const verifyFirebaseToken = async (req, res, next) => {
-  const authHeader =  req.headers.authorization;
-  const token = authHeader.split(" ")[1];
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).send({ massage: "unauthorized: no auth header." });
+    }
+    const token = authHeader.split(" ")[1];
 
-  if (!token) {
-    return res.status(401).send({ massage: "unauthorized access token." });
+    if (!token) {
+      return res.status(401).send({ massage: "unauthorized access token." });
+    }
+
+    const userInfo = await admin.auth().verifyIdToken(token);
+
+    req.tokenEmail = userInfo.email;
+    next();
+  } catch (error) {
+    console.error("Firebase token verification failed:", error.message);
+    return res.status(401).send({ massage: "unauthorized: invalid token." });
   }
-
-  const userInfo = await admin.auth().verifyIdToken(token);
-
-  req.tokenEmail = userInfo.email;
-  next();
 };
 
 // Mongodb
@@ -103,8 +111,8 @@ async function run() {
 
       res.cookie("token", token, {
         httpOnly: true,
-        secure: false, // true in production (HTTPS)
-        sameSite: "strict",
+        secure: true,
+        sameSite: "none",
         maxAge: 60 * 60 * 1000,
       });
 
@@ -205,7 +213,7 @@ async function run() {
           application.company_logo = job.company_logo;
         }
 
-        console.log(result)
+      
         
 
         res.send(result);
