@@ -7,6 +7,10 @@ const PORT = process.env.PORT || 3000;
 
 const admin = require("firebase-admin");
 
+//const decoded = Buffer(process.env.FB_SEERVICES_KEY,'base64').toString('utf8');
+
+//const serviceAccount = JSON.parse(decoded)
+
 const serviceAccount = require("./firebase-private-key.json");
 
 admin.initializeApp({
@@ -72,6 +76,7 @@ const db_password = process.env.DB_PASSWORD;
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const { ObjectId } = require("mongodb");
 const { nextTick } = require("process");
+const { json } = require("stream/consumers");
 const uri = `mongodb+srv://${db_username}:${db_password}@cluster0.tab6apc.mongodb.net/?appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
