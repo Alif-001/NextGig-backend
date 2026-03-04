@@ -28,8 +28,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 const verifyToken = (req, res, next) => {
-  const token = req.cookies?.token;
-
+  const token = req?.cookies?.token;
   if (!token) {
     return res.status(401).send({ massage: "unauthorized access token." });
   }
@@ -44,7 +43,7 @@ const verifyToken = (req, res, next) => {
 };
 
 const verifyFirebaseToken = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const authHeader =  req.headers.authorization;
   const token = authHeader.split(" ")[1];
 
   if (!token) {
@@ -181,10 +180,10 @@ async function run() {
       async (req, res) => {
         const email = req.query.email;
 
-        if (email !== req.decoded.email) {
+        if (email !== req.tokenEmail) {
           return res.status(403).send({ message: "forbidden access." });
         }
-        if (email !== req.tokenEmail) {
+        if (email !== req.decoded.email) {
           return res.status(403).send({ message: "forbidden access." });
         }
 
@@ -205,6 +204,9 @@ async function run() {
           application.title = job.title;
           application.company_logo = job.company_logo;
         }
+
+        console.log(result)
+        
 
         res.send(result);
       },
